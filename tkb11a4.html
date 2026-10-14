@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thời Khóa Biểu 11A4 - Bảng Ngang</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f4f8;
+            /* Hình nền trừu tượng mạng lưới toán học */
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(52, 152, 219, 0.08) 0%, transparent 25%),
+                radial-gradient(circle at 85% 75%, rgba(155, 89, 182, 0.08) 0%, transparent 25%),
+                linear-gradient(45deg, transparent 49%, rgba(0,0,0,0.02) 50%, transparent 51%),
+                linear-gradient(-45deg, transparent 49%, rgba(0,0,0,0.02) 50%, transparent 51%);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Biểu tượng toán học trang trí lơ lửng */
+        .math-symbol {
+            position: absolute;
+            color: rgba(52, 152, 219, 0.15);
+            font-weight: bold;
+            z-index: -1;
+            user-select: none;
+        }
+        .sym-1 { top: -20px; left: -20px; font-size: 4rem; transform: rotate(12deg); }
+        .sym-2 { top: 40px; right: -30px; font-size: 3.5rem; transform: rotate(-15deg); }
+        .sym-3 { bottom: -10px; left: -10px; font-size: 4.5rem; transform: rotate(30deg); }
+        .sym-4 { bottom: 30px; right: 0px; font-size: 3rem; transform: rotate(-10deg); }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+            color: #1a252f;
+        }
+        
+        h3 {
+            text-align: center;
+            margin-top: 0;
+            font-weight: 400;
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        /* Bộ điều khiển lọc thứ */
+        .filter-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #475569;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .filter-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .filter-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Bảng thời khóa biểu */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            background-color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 14px 10px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        th {
+            background-color: #1e293b;
+            color: #f8fafc;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .col-tiet {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            color: #475569;
+            width: 80px;
+        }
+
+        tr:nth-child(even) td:not(.col-tiet) {
+            background-color: #f8fafc;
+        }
+
+        tr:hover td:not(.col-tiet) {
+            background-color: #f1f5f9;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .filter-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Các yếu tố toán học trang trí -->
+        <div class="math-symbol sym-1">∫ f(x)dx</div>
+        <div class="math-symbol sym-2">∑ xᵢ</div>
+        <div class="math-symbol sym-3">lim x→∞</div>
+        <div class="math-symbol sym-4">√π</div>
+
+        <h2>THỜI KHÓA BIỂU LỚP 11A4</h2>
+        <h3>Áp dụng từ ngày 12/10/2026 - Học kỳ I (2026-2027)</h3>
+
+        <!-- Thanh chọn lọc Thứ -->
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="filterDay('all', this)">Tất cả</button>
+            <button class="filter-btn" onclick="filterDay('thu-2', this)">Thứ 2</button>
+            <button class="filter-btn" onclick="filterDay('thu-3', this)">Thứ 3</button>
+            <button class="filter-btn" onclick="filterDay('thu-4', this)">Thứ 4</button>
+            <button class="filter-btn" onclick="filterDay('thu-5', this)">Thứ 5</button>
+            <button class="filter-btn" onclick="filterDay('thu-6', this)">Thứ 6</button>
+            <button class="filter-btn" onclick="filterDay('thu-7', this)">Thứ 7</button>
+        </div>
+
+        <!-- Bảng thời khóa biểu ngang -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-tiet">Tiết</th>
+                        <th class="day-col thu-2">Thứ 2</th>
+                        <th class="day-col thu-3">Thứ 3</th>
+                        <th class="day-col thu-4">Thứ 4</th>
+                        <th class="day-col thu-5">Thứ 5</th>
+                        <th class="day-col thu-6">Thứ 6</th>
+                        <th class="day-col thu-7">Thứ 7</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Tiết 1 -->
+                    <tr>
+                        <td class="col-tiet">Tiết 1</td>
+                        <td class="day-col thu-2">CĐ Toán-Phương</td>
+                        <td class="day-col thu-3">Địa Lí-Giang</td>
+                        <td class="day-col thu-4">CĐ Vật lí-Bình</td>
+                        <td class="day-col thu-5">Toán-Phương</td>
+                        <td class="day-col thu-6">Hóa học-Vượng</td>
+                        <td class="day-col thu-7">HĐTN-HN-Bình</td>
+                    </tr>
+                    <!-- Tiết 2 -->
+                    <tr>
+                        <td class="col-tiet">Tiết 2</td>
+                        <td class="day-col thu-2">Hóa học-Vượng</td>
+                        <td class="day-col thu-3">Tin học-Hằng</td>
+                        <td class="day-col thu-4">Toán-Phương</td>
+                        <td class="day-col thu-5">Toán-Phương</td>
+                        <td class="day-col thu-6">Địa Lí-Giang</td>
+                        <td class="day-col thu-7">Vật lí-Bình</td>
+                    </tr>
+                    <!-- Tiết 3 -->
+                    <tr>
+                        <td class="col-tiet">Tiết 3</td>
+                        <td class="day-col thu-2">Tiếng Anh-Thủy</td>
+                        <td class="day-col thu-3">Vật lí-Bình</td>
+                        <td class="day-col thu-4">Tin học-Hằng</td>
+                        <td class="day-col thu-5">GDTC-Tuyển</td>
+                        <td class="day-col thu-6">Ngữ văn-Tím</td>
+                        <td class="day-col thu-7">HĐTN-HN-Bình</td>
+                    </tr>
+                    <!-- Tiết 4 -->
+                    <tr>
+                        <td class="col-tiet">Tiết 4</td>
+                        <td class="day-col thu-2">Tiếng Anh-Thủy</td>
+                        <td class="day-col thu-3">Ngữ văn-Tím</td>
+                        <td class="day-col thu-4">CĐ Ngữ văn-Tím</td>
+                        <td class="day-col thu-5">Tiếng Anh-Thủy</td>
+                        <td class="day-col thu-6">GDTC-Tuyển</td>
+                        <td class="day-col thu-7">GDQP-AN-Thường</td>
+                    </tr>
+                    <!-- Tiết 5 -->
+                    <tr>
+                        <td class="col-tiet">Tiết 5</td>
+                        <td class="day-col thu-2"></td>
+                        <td class="day-col thu-3">Ngữ văn-Tím</td>
+                        <td class="day-col thu-4"></td>
+                        <td class="day-col thu-5">Lịch Sử-Ngoan</td>
+                        <td class="day-col thu-6">GDĐP-Nga</td>
+                        <td class="day-col thu-7"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Đoạn JavaScript ẩn/hiện cột theo Thứ -->
+    <script>
+        function filterDay(dayClass, btn) {
+            // Cập nhật trạng thái nút được chọn
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Lấy tất cả các cột thứ
+            const allDayCols = document.querySelectorAll('.day-col');
+
+            allDayCols.forEach(col => {
+                if (dayClass === 'all') {
+                    col.style.display = ''; // Hiện tất cả
+                } else {
+                    if (col.classList.contains(dayClass)) {
+                        col.style.display = ''; // Hiện thứ được chọn
+                    } else {
+                        col.style.display = 'none'; // Ẩn các thứ khác
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
