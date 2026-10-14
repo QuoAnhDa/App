@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ảnh">
+<meta name="theme-color" content="#faf6ea">
+<title>Ảnh lưu trữ (Google Drive)</title>
+<style>
+:root{--bg:#faf6ea;--gold:#8a5a00;--text:#2a2418;--muted:#6b624e;--line:rgba(138,90,0,.3);--card:#fff;--bad:#a33}
+@media(prefers-color-scheme:dark){:root{--bg:#17130a;--gold:#e0b04a;--text:#f3ead2;--muted:#b8ac8c;--line:rgba(224,176,74,.3);--card:#241d0f;--bad:#ff8a80}}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);min-height:100%}
+[hidden]{display:none!important}
+button,input{font:inherit}button{min-height:44px;padding:0 14px;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--gold)}button.p{background:var(--gold);color:var(--bg)}button.d{color:var(--bad)}
+#lock{max-width:340px;margin:22vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
+#lock h1{font-size:1.15rem;color:var(--gold);margin:0 0 4px}#lock p{color:var(--muted);margin:0 0 12px;font-size:.9rem}
+#lock input,#lock select{width:100%;min-height:48px;font-size:18px;text-align:center;letter-spacing:.2em;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);margin-bottom:10px}
+#er{white-space:pre-wrap;color:var(--bad);min-height:1.3em;font-size:.9rem;margin-top:8px}
+header{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;padding:10px 0;background:var(--bg)}header b{flex:1;color:var(--gold)}
+#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding-bottom:30px}@media(min-width:640px){#grid{grid-template-columns:repeat(5,1fr)}}
+#grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;display:block;background:var(--card)}
+#empty{text-align:center;color:var(--muted);margin-top:18vh}
+#lb{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.94);display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#lb .im{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}#lb img{max-width:100%;max-height:100%;object-fit:contain}
+#lb .bar{display:flex;gap:8px;padding:10px;justify-content:space-between;align-items:center;color:#eee}#lb .bar button{background:#2b2b2b;color:#eee;border-color:#444;min-width:48px}#lb .bar button.d{color:#ff8a80}
+#more{display:block;margin:6px auto 30px;min-width:160px}#grid img{min-height:90px}header small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}details{text-align:left;margin-top:12px;color:var(--muted);font-size:.85rem}</style></head>
+<body>
+<section id="lock">
+ <h1>🔒 Ảnh lưu trữ</h1><p>Đăng nhập Google để xem và đăng ảnh. Ảnh được lưu trong Google Drive của tài khoản được phép.</p>
+ <button id="go" class="p" type="button" style="width:100%">Đăng nhập bằng Google</button><div id="er"></div>
+ <details id="dt"><summary>Cài đặt Google Client ID</summary><input id="cid" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" style="letter-spacing:0;font-size:15px;margin-top:8px"><button id="cs" type="button" style="width:100%">Lưu Client ID</button></details>
+</section>
+<section id="app" hidden>
+ <header><b><span id="cnt">Ảnh</span><small id="em"></small></b><button id="add" class="p" type="button">+ Thêm ảnh</button><button id="lk" type="button">Đăng xuất</button></header>
+ <input id="fi" type="file" accept="image/*" multiple hidden>
+ <div id="grid"></div><p id="empty" hidden>Chưa có ảnh. Chạm "+ Thêm ảnh" để đăng từ thư viện.</p><button id="more" type="button" hidden>Tải thêm</button>
+</section>
+<div id="lb" hidden><div class="im"><img id="big" alt=""></div><div class="bar"><button id="pv" type="button">‹</button><button id="rm" class="d" type="button">Xóa</button><span id="ix"></span><button id="cl" type="button">Đóng</button><button id="nx" type="button">›</button></div></div>
+<script>
+(function(){
+const $=i=>document.getElementById(i),OK="anhdaodzntg@gmail.com",FN="Anh luu tru",D="https://www.googleapis.com/drive/v3",SC="https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let tok=null,cl=null,fid=null,items=[],next=null,cache=new Map(),cur=-1,obs=null,busy=false;
+try{const s=JSON.parse(sessionStorage.getItem("g_tok")||"null");if(s&&s.exp>Date.now())tok=s}catch(e){}
+const msg=t=>{$("er").textContent=t||""};
+function relogin(m){tok=null;try{sessionStorage.removeItem("g_tok")}catch(e){}clear();$("app").hidden=true;$("lock").hidden=false;msg(m||"Phiên đã hết hạn, hãy đăng nhập lại.")}
+function clear(){cache.forEach(u=>URL.revokeObjectURL(u));cache.clear();items=[];$("grid").innerHTML="";hide()}
+async function api(u,o){o=o||{};if(!tok||tok.exp<Date.now()){relogin();throw new Error("auth")}
+ o.headers=Object.assign({Authorization:"Bearer "+tok.t},o.headers||{});const r=await fetch(u,o);
+ if(r.status===401){relogin();throw new Error("auth")}if(!r.ok)throw new Error("HTTP "+r.status);return r}
+async function folder(){if(fid)return fid;fid=ls.get("g_fid");
+ if(fid){try{const r=await(await api(D+"/files/"+fid+"?fields=id,trashed")).json();if(!r.trashed)return fid}catch(e){if(e.message==="auth")throw e}fid=null}
+ const q=encodeURIComponent("name='"+FN+"' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+ let j=await(await api(D+"/files?q="+q+"&fields=files(id)")).json();
+ if(j.files&&j.files[0])fid=j.files[0].id;else{j=await(await api(D+"/files?fields=id",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:FN,mimeType:"application/vnd.google-apps.folder"})})).json();fid=j.id}
+ ls.set("g_fid",fid);return fid}
+async function list(more){const f=await folder(),q=encodeURIComponent("'"+f+"' in parents and trashed=false and mimeType contains 'image/'");
+ const j=await(await api(D+"/files?q="+q+"&orderBy="+encodeURIComponent("createdTime desc")+"&pageSize=60&fields="+encodeURIComponent("nextPageToken,files(id,name)")+(more&&next?"&pageToken="+encodeURIComponent(next):""))).json();
+ items=more?items.concat(j.files||[]):(j.files||[]);next=j.nextPageToken||null;paint()}
+async function url(id){if(cache.has(id))return cache.get(id);const b=await(await api(D+"/files/"+id+"?alt=media")).blob(),u=URL.createObjectURL(b);cache.set(id,u);return u}
+function paint(){if(obs)obs.disconnect();obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){obs.unobserve(e.target);url(e.target.dataset.id).then(u=>{e.target.src=u}).catch(()=>{})}}),{rootMargin:"400px"});
+ $("grid").innerHTML=items.map((x,i)=>'<img data-i="'+i+'" data-id="'+x.id+'" alt="">').join("");$("grid").querySelectorAll("img").forEach(i=>obs.observe(i));
+ $("cnt").textContent="Ảnh ("+items.length+(next?"+":"")+")";$("empty").hidden=items.length>0;$("more").hidden=!next}
+async function shrink(f){try{let b;try{b=await createImageBitmap(f)}catch(e){b=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=URL.createObjectURL(f)})}
+ const w=b.width||b.naturalWidth,h=b.height||b.naturalHeight,k=Math.min(1,2560/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(b,0,0,c.width,c.height);
+ const o=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));return o||f}catch(e){return f}}
+async function up(f){const b=await shrink(f),fo=await folder(),bd="x"+Date.now(),nm=(f.name||"anh").replace(/\.[^.]+$/,"")+".jpg";
+ const body=new Blob(["--"+bd+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify({name:nm,parents:[fo]})+"\r\n--"+bd+"\r\nContent-Type: "+(b.type||"image/jpeg")+"\r\n\r\n",b,"\r\n--"+bd+"--"]);
+ await api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+bd},body})}
+$("add").onclick=()=>{if(!busy)$("fi").click()};
+$("fi").onchange=async function(){const fs=Array.from(this.files);this.value="";if(!fs.length)return;busy=true;$("add").disabled=true;let n=0,bad=[];
+ for(const f of fs){$("cnt").textContent="Đang đăng "+(++n)+"/"+fs.length+"…";try{await up(f)}catch(e){if(e.message==="auth"){busy=false;$("add").disabled=false;return}bad.push(f.name)}}
+ busy=false;$("add").disabled=false;try{await list()}catch(e){}if(bad.length)alert("Không đăng được: "+bad.join(", "))};
+$("more").onclick=()=>list(true).catch(()=>{});
+async function show(i){if(i<0||i>=items.length)return;cur=i;$("ix").textContent=(i+1)+"/"+items.length;$("lb").hidden=false;$("big").removeAttribute("src");try{const u=await url(items[i].id);if(cur===i)$("big").src=u}catch(e){}}
+function hide(){$("lb").hidden=true;$("big").removeAttribute("src");cur=-1}
+$("grid").onclick=e=>{const i=e.target.dataset.i;if(i!=null)show(+i)};
+$("cl").onclick=hide;$("pv").onclick=()=>show(cur-1);$("nx").onclick=()=>show(cur+1);
+$("rm").onclick=async()=>{if(!confirm("Chuyển ảnh này vào thùng rác Google Drive?"))return;const id=items[cur].id;hide();try{await api(D+"/files/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})});await list()}catch(e){}};
+let sx=0;$("lb").addEventListener("touchstart",e=>{sx=e.changedTouches[0].clientX},{passive:true});$("lb").addEventListener("touchend",e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>60)show(cur+(d<0?1:-1))});
+async function start(){$("lock").hidden=true;$("app").hidden=false;$("em").textContent=tok.email;msg("");try{await list()}catch(e){if(e.message!=="auth")alert("Không đọc được Google Drive. Kiểm tra đã bật Google Drive API chưa.\n("+e.message+")")}}
+async function accept(r){try{if(!google.accounts.oauth2.hasGrantedAllScopes(r,"https://www.googleapis.com/auth/drive.file")){msg("Bạn cần tích đồng ý quyền Google Drive khi đăng nhập.");return}
+ const u=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}})).json(),em=(u.email||"").toLowerCase();
+ if(em!==OK){try{google.accounts.oauth2.revoke(r.access_token)}catch(e){}msg("Tài khoản "+(u.email||"này")+" không có quyền.\nHãy đăng nhập bằng "+OK);return}
+ tok={t:r.access_token,exp:Date.now()+(+r.expires_in-60)*1000,email:u.email};try{sessionStorage.setItem("g_tok",JSON.stringify(tok))}catch(e){}await start()}catch(e){msg("Đăng nhập thất bại, thử lại.")}}
+function gis(){const id=ls.get("adm_cid")||ls.get("g_cid");$("cid").value=id||"";if(!id){$("dt").open=true;msg("Hãy nhập Google Client ID trước.");return}
+ const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;
+ s.onload=()=>{cl=google.accounts.oauth2.initTokenClient({client_id:id,scope:SC,callback:r=>{if(r.error){msg("Đăng nhập thất bại: "+r.error);return}accept(r)}});if(tok)start()};
+ s.onerror=()=>msg("Không tải được Google. Kiểm tra mạng/VPN rồi tải lại trang.");document.head.appendChild(s)}
+$("go").onclick=()=>{if(!cl){msg(ls.get("adm_cid")||ls.get("g_cid")?"Đang tải Google, thử lại sau vài giây.":"Hãy nhập Google Client ID trước.");return}cl.requestAccessToken({prompt:"select_account"})};
+$("cs").onclick=()=>{ls.set("g_cid",$("cid").value.trim());ls.set("adm_cid",$("cid").value.trim());location.reload()};
+$("lk").onclick=()=>{try{if(tok)google.accounts.oauth2.revoke(tok.t)}catch(e){}relogin("Đã đăng xuất.")};
+gis();
+})();
+</script>
+</body>
+</html>
